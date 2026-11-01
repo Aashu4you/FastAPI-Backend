@@ -1,5 +1,6 @@
 from fastapi import FastAPI
 from fastapi.responses import JSONResponse
+from schema.prediction_response import PredictionResponse
 from schema.user_input import UserInput # we are importing the pydantic model from the schema
 from model.predict import predict_output , model , MODEL_VERSION
 
@@ -22,7 +23,7 @@ def health_check():
 
   
 # now we will create an endpoint for the prediction
-@app.post('/predict')
+@app.post('/predict', response_model=PredictionResponse)
 def predict_premium(data : UserInput):
     
     # we will be passing the value to our endpoint in a dataframe as model is built to handle the data in that format only
