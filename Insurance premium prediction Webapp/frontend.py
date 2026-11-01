@@ -1,4 +1,3 @@
-
 import streamlit as st
 import requests
 
@@ -86,7 +85,6 @@ if submitted:
 
     else:
 
-        # Prepare data for FastAPI
         input_data = {
             "age": age,
             "weight": weight,
@@ -112,20 +110,64 @@ if submitted:
                 response.raise_for_status()
 
                 result = response.json()
+                
 
-            # Display prediction
-            prediction = result["Predicted_category "]
+            prediction_data = result["Predicted_category "]
+
+            prediction = prediction_data["predicted_category"]
+            confidence = prediction_data["confidence"]
+            class_probabilities = prediction_data["class_probabilities"]
 
             st.divider()
 
             st.success("Prediction completed successfully!")
 
+            # Display predicted category
             st.subheader("Your Prediction")
 
             st.metric(
                 label="Predicted Insurance Category",
-                value=str(prediction)
+                value=prediction
             )
+
+            # Display confidence
+            st.subheader("Model Confidence")
+
+            st.metric(
+                label="Confidence Score",
+                value=f"{confidence * 100:.2f}%"
+            )
+
+            st.progress(
+                max(0.0, min(float(confidence), 1.0))
+            )
+
+            # Display class probabilities
+            st.subheader("Probability Distribution")
+
+            st.write(
+                "Here's how the model distributes probabilities "
+                "across the available insurance categories."
+            )
+
+            st.bar_chart(
+                {
+                    "Probability (%)": {
+                        category: probability * 100
+                        for category, probability
+                        in class_probabilities.items()
+                    }
+                }
+            )
+
+            # Detailed probability values
+            st.subheader("Detailed Probabilities")
+
+            for category, probability in class_probabilities.items():
+
+                st.write(
+                    f"**{category}:** {probability * 100:.2f}%"
+                )
 
         except requests.exceptions.ConnectionError:
             st.error(
@@ -133,8 +175,14 @@ if submitted:
                 "Please make sure your backend is running."
             )
 
+        except requests.exceptions.Timeout:
+            st.error("The prediction request timed out. Please try again.")
+
         except requests.exceptions.HTTPError:
             st.error(f"API Error: {response.text}")
+
+        except (KeyError, TypeError, ValueError) as e:
+            st.error(f"Unexpected API response format: {e}")
 
         except Exception as e:
             st.error(f"Something went wrong: {e}")
